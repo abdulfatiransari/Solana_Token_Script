@@ -1,0 +1,25 @@
+{
+  "name": "solana_tokn",
+  "version": "1.0.0",
+  "description": "",
+  "main": "token.ts",
+  "type": "module",
+  "scripts": {
+    "start": "npx tsx token.ts",
+    "start:meta": "npx tsx metadata.ts",
+    "start:mint": "npx tsx mintToken.ts",
+    "start:meta1": "npx tsx metadata1.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@metaplex-foundation/mpl-token-metadata": "^3.2.1",
+    "@solana/spl-token": "^0.4.8",
+    "@solana/spl-token-metadata": "^0.1.4",
+    "@solana/web3.js": "^1.95.2",
+    "bs58": "^6.0.0",
+    "dotenv": "^16.4.5"
+  }
+}
