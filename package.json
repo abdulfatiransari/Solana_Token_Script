@@ -9,6 +9,9 @@
     "start:meta": "npx tsx metadata.ts",
     "start:mint": "npx tsx mintToken.ts",
     "start:meta1": "npx tsx metadata1.ts",
+    "start:royalty": "npx tsx TokenWithRoyalty.ts",
+    "start:fee": "npx tsx tokenFee.ts",
+    "start:burn": "npx tsx bunToken.ts",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

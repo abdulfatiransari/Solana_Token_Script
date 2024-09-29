@@ -21,26 +21,29 @@ import {
 } from "@solana/spl-token";
 import type { TokenMetadata } from "@solana/spl-token-metadata";
 import { createInitializeInstruction, pack } from "@solana/spl-token-metadata";
-import base58 from "bs58";
+import bs58 from "bs58";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 (async () => {
-    const PRIVATE_KEY = "";
-    const payer = Keypair.fromSecretKey(base58.decode(`${PRIVATE_KEY}`));
+    const payer = Keypair.fromSecretKey(bs58.decode(`${process.env.PRIVATE_KEY}`));
 
     const mint = Keypair.generate();
     const decimals = 9;
 
     const metadata: TokenMetadata = {
+        updateAuthority: payer.publicKey,
         mint: mint.publicKey,
-        name: "Test Token",
-        symbol: "TT",
-        uri: "https://www.lib.uchicago.edu/efts/ARTFL/projects/mckee/Images/gavarni-reduced2.jpg",
+        name: "ABC Token",
+        symbol: "ABCT",
+        uri: "https://ipfs.io/ipfs/QmShxjdZ8Exvy9uZ6Ym8umL68RGGxcpZRKx9362g3qJvWn",
         additionalMetadata: [["new-field", "new-value"]],
     };
 
-    const mintLen = getMintLen([ExtensionType.MetadataPointer]);
-
     const metadataLen = TYPE_SIZE + LENGTH_SIZE + pack(metadata).length;
+
+    const mintLen = getMintLen([ExtensionType.MetadataPointer]);
 
     const connection = new Connection(clusterApiUrl("devnet"), "finalized");
 
@@ -58,6 +61,7 @@ import base58 from "bs58";
             space: mintLen,
             lamports: mintLamports,
             programId: TOKEN_2022_PROGRAM_ID,
+            // programId: new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"),
         }),
         createInitializeMetadataPointerInstruction(
             mint.publicKey,

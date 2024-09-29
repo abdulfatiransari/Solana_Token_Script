@@ -1,0 +1,12 @@
+{
+    "name": "Bullrich",
+    "symbol": "Bullrich",
+    "description": "Only Possible On Solana",
+    "image": "https://ipfs.io/ipfs/QmZDF12CmZtQ5U3YY4yafNZrDgCj9TgZdXhHkntCuBXSu4",
+    "attributes": [
+        {
+            "trait_type": "Item",
+            "value": "Developer Portal"
+        }
+    ]
+}

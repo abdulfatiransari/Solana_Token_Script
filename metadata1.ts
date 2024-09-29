@@ -9,7 +9,6 @@ import {
 import {
     createInitializeMetadataPointerInstruction,
     createInitializeMintInstruction,
-    // createMint,
     createMintToInstruction,
     ExtensionType,
     getMintLen,
@@ -21,27 +20,23 @@ import { createInitializeInstruction, pack, TokenMetadata } from "@solana/spl-to
 import fs from "fs";
 import bs58 from "bs58";
 import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 (async () => {
-    // const payerKeypairString = fs.readFileSync("./myKeypair.json", 'utf-8');
-    // const payer = Keypair.fromSecretKey(new Uint8Array(JSON.parse(payerKeypairString)))
-    // const payer = Keypair.generate();
-    const PRIVATE_KEY = "";
-    // const payer = Keypair.fromSecretKey(base58.decode(`${PRIVATE_KEY}`));
-    const payer = Keypair.fromSecretKey(bs58.decode(`${PRIVATE_KEY}`));
+    const payer = Keypair.fromSecretKey(bs58.decode(`${process.env.PRIVATE_KEY}`));
 
     const mint = Keypair.generate();
     await fs.writeFileSync("./tokenKeypair.json", JSON.stringify(Object.values(mint.secretKey)), "utf-8");
-    // const mintKeypairString = fs.readFileSync("./tokenKeypair.json", "utf-8");
-    // const mint = Keypair.fromSecretKey(new Uint8Array(JSON.parse(mintKeypairString)));
 
     const decimals = 9;
 
     const metadata: TokenMetadata = {
         mint: mint.publicKey,
-        name: "TOKEN_NAME",
-        symbol: "SMBL",
-        uri: "URI",
+        name: "Bullrich",
+        symbol: "Bullrich",
+        uri: "https://ipfs.io/ipfs/QmSURMqzXZoUHxpG2WVqjGR3ezmvSEXUnERBHEq56QtsgK",
         additionalMetadata: [["new-field", "new-value"]],
     };
 
@@ -51,19 +46,10 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 
     const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
 
-    // const airdropSignature = await connection.requestAirdrop(
-    //   payer.publicKey,
-    //   2 * LAMPORTS_PER_SOL
-    // );
-    // await connection.confirmTransaction({
-    //   signature: airdropSignature,
-    //   ...(await connection.getLatestBlockhash()),
-    // });
-
-    // const mintK = await createMint(connection, payer, payer.publicKey, payer.publicKey, decimals, mint, "confirmed", TOKEN_2022_PROGRAM_ID);
     const mintK = mint.publicKey;
 
     const mintLamports = await connection.getMinimumBalanceForRentExemption(mintLen + metadataLen);
+
     const mintTransaction = new Transaction().add(
         SystemProgram.createAccount({
             fromPubkey: payer.publicKey,
@@ -73,7 +59,7 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
             programId: TOKEN_2022_PROGRAM_ID,
         }),
         createInitializeMetadataPointerInstruction(mintK, payer.publicKey, mintK, TOKEN_2022_PROGRAM_ID),
-        createInitializeMintInstruction(mintK, decimals, payer.publicKey, null, TOKEN_2022_PROGRAM_ID),
+        createInitializeMintInstruction(mintK, decimals, payer.publicKey, payer.publicKey, TOKEN_2022_PROGRAM_ID),
         createInitializeInstruction({
             programId: TOKEN_2022_PROGRAM_ID,
             mint: mintK,
@@ -105,7 +91,7 @@ import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
             mintK,
             fromTokenAccount.address,
             payer.publicKey,
-            100 * 10 ** decimals,
+            10000000 * 10 ** decimals,
             [payer],
             TOKEN_2022_PROGRAM_ID
         )
