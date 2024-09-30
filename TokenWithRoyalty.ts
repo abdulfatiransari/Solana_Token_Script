@@ -58,8 +58,8 @@ dotenv.config();
     };
 
     // Transfer Fee Configurations
-    const transferFeeConfigAuthority = mint;
-    const withdrawWithheldAuthority = mint;
+    const transferFeeConfigAuthority = payer;
+    const withdrawWithheldAuthority = payer;
     const feeBasisPoints = 100; // 1%
     const maxFee = BigInt(100);
 
@@ -78,13 +78,13 @@ dotenv.config();
         programId: TOKEN_2022_PROGRAM_ID,
     });
 
-    const initializeMintInstruction = createInitializeMintInstruction(
-        mintK,
-        decimals,
-        payer.publicKey,
-        payer.publicKey,
-        TOKEN_2022_PROGRAM_ID
-    );
+    // const initializeMintInstruction = createInitializeMintInstruction(
+    //     mintK,
+    //     decimals,
+    //     payer.publicKey,
+    //     payer.publicKey,
+    //     TOKEN_2022_PROGRAM_ID
+    // );
 
     // 3. Set Up Transfer Fee Configuration
     const initializeTransferFeeConfig = createInitializeTransferFeeConfigInstruction(
@@ -99,8 +99,20 @@ dotenv.config();
     // Create the transaction for mint creation
     const transaction = new Transaction().add(
         createMintAccountInstruction,
-        initializeMintInstruction,
-        initializeTransferFeeConfig
+        initializeTransferFeeConfig,
+        createInitializeMetadataPointerInstruction(mintK, payer.publicKey, mintK, TOKEN_2022_PROGRAM_ID),
+        createInitializeMintInstruction(mintK, decimals, payer.publicKey, null, TOKEN_2022_PROGRAM_ID),
+
+        createInitializeInstruction({
+            programId: TOKEN_2022_PROGRAM_ID,
+            mint: mintK,
+            metadata: metadata.mint,
+            name: metadata.name,
+            symbol: metadata.symbol,
+            uri: metadata.uri,
+            mintAuthority: payer.publicKey,
+            updateAuthority: payer.publicKey,
+        })
     );
 
     // Send transaction for creating mint account
@@ -132,31 +144,4 @@ dotenv.config();
 
     const mintSignature = await sendAndConfirmTransaction(connection, mintToTx, [payer, mint]);
     console.log("Mint Signature:", `https://solana.fm/tx/${mintSignature}?cluster=devnet-solana`);
-
-    // 4. Initialize Metadata (Second Transaction)
-    const initializeMetadataPointerInstruction = createInitializeMetadataPointerInstruction(
-        mintK,
-        payer.publicKey,
-        mintK,
-        TOKEN_2022_PROGRAM_ID
-    );
-
-    const initializeMetadataInstruction = createInitializeInstruction({
-        programId: TOKEN_2022_PROGRAM_ID,
-        mint: mintK,
-        metadata: mintK,
-        name: metadata.name,
-        symbol: metadata.symbol,
-        uri: metadata.uri,
-        mintAuthority: payer.publicKey,
-        updateAuthority: payer.publicKey,
-    });
-
-    const metadataTransaction = new Transaction().add(
-        initializeMetadataPointerInstruction,
-        initializeMetadataInstruction
-    );
-
-    const metadataTransactionSignature = await sendAndConfirmTransaction(connection, metadataTransaction, [payer]);
-    console.log("Metadata Initialized:", `https://solana.fm/tx/${metadataTransactionSignature}?cluster=devnet-solana`);
 })();
