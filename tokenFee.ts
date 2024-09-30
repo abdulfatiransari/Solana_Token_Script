@@ -7,10 +7,14 @@ import {
     Transaction,
 } from "@solana/web3.js";
 import {
+    createInitializeInstruction,
+    createInitializeMetadataPointerInstruction,
     createInitializeMintInstruction,
     createInitializeTransferFeeConfigInstruction,
     createMintToInstruction,
     ExtensionType,
+    getMetadataPointerState,
+    getMint,
     getMintLen,
     getTokenMetadata,
     TOKEN_2022_PROGRAM_ID,
@@ -19,6 +23,7 @@ import fs from "fs";
 import bs58 from "bs58";
 import { getOrCreateAssociatedTokenAccount } from "@solana/spl-token";
 import dotenv from "dotenv";
+import { pack, TokenMetadata } from "@solana/spl-token-metadata";
 
 dotenv.config();
 
@@ -26,7 +31,17 @@ dotenv.config();
     const payer = Keypair.fromSecretKey(bs58.decode(`${process.env.PRIVATE_KEY}`));
 
     const mint = Keypair.generate();
+    const mintK = mint.publicKey;
     await fs.writeFileSync("./tokenKeypair.json", JSON.stringify(Object.values(mint.secretKey)), "utf-8");
+
+    const metadata: TokenMetadata = {
+        // updateAuthority: payer.publicKey,
+        mint: mintK,
+        name: "ABC TOKEN",
+        symbol: "ABCT",
+        uri: "https://ipfs.io/ipfs/QmShxjdZ8Exvy9uZ6Ym8umL68RGGxcpZRKx9362g3qJvWn",
+        additionalMetadata: [["new-field", "new-value"]],
+    };
 
     const decimals = 9;
 
@@ -37,7 +52,8 @@ dotenv.config();
     const feeBasisPoints = 100;
     const maxFee = BigInt(100);
 
-    const mintLen = getMintLen([ExtensionType.TransferFeeConfig]);
+    const mintLen = getMintLen([ExtensionType.TransferFeeConfig, ExtensionType.MetadataPointer]);
+    const metadataLen = 2 + 2 + pack(metadata).length;
 
     const connection = new Connection(clusterApiUrl("devnet"), "confirmed");
 
@@ -46,9 +62,7 @@ dotenv.config();
 
     // await connection.requestAirdrop(payer.publicKey, 2 * 1e9);
 
-    const mintK = mint.publicKey;
-
-    const mintLamports = await connection.getMinimumBalanceForRentExemption(mintLen);
+    const mintLamports = await connection.getMinimumBalanceForRentExemption(mintLen + metadataLen);
 
     // tokens
     const createAccountInstruction = SystemProgram.createAccount({
@@ -68,18 +82,38 @@ dotenv.config();
         TOKEN_2022_PROGRAM_ID // Token Extension Program ID
     );
 
+    const initializeMetadataPointerInstruction = createInitializeMetadataPointerInstruction(
+        mintK,
+        payer.publicKey,
+        mintK,
+        TOKEN_2022_PROGRAM_ID
+    );
+
     const initializeMintInstruction = createInitializeMintInstruction(
         mintK,
         decimals,
         payer.publicKey,
-        payer.publicKey,
+        null,
         TOKEN_2022_PROGRAM_ID
     );
+
+    const initializeInstruction = createInitializeInstruction({
+        programId: TOKEN_2022_PROGRAM_ID,
+        mint: mintK,
+        metadata: metadata.mint,
+        name: metadata.name,
+        symbol: metadata.symbol,
+        uri: metadata.uri,
+        mintAuthority: payer.publicKey,
+        updateAuthority: payer.publicKey,
+    });
 
     const transaction = new Transaction().add(
         createAccountInstruction,
         initializeTransferFeeConfig,
-        initializeMintInstruction
+        initializeMetadataPointerInstruction,
+        initializeMintInstruction,
+        initializeInstruction
     );
 
     // Send transaction
@@ -121,6 +155,13 @@ dotenv.config();
     console.log("Mint Signature:", `https://solana.fm/tx/${mintSignature}?cluster=devnet-solana`);
 
     console.log("mint.publicKey", mint.publicKey);
+
+    // Retrieve mint information
+    const mintInfo = await getMint(connection, mint.publicKey, "confirmed", TOKEN_2022_PROGRAM_ID);
+
+    // Retrieve and log the metadata pointer state
+    const metadataPointer = getMetadataPointerState(mintInfo);
+    console.log("\nMetadata Pointer:", JSON.stringify(metadataPointer, null, 2));
 
     const metadataAddress = await getTokenMetadata(
         connection,
